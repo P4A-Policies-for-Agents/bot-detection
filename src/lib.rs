@@ -19,7 +19,7 @@ async fn request_filter(request_state: RequestState, config: &Config) {
     // Add a new header
     headers_state
         .handler()
-        .set_header("x-added", &config.string_property);
+        .set_header("x-added", &config.mode.clone().unwrap_or_default());
 }
 
 #[entrypoint]
@@ -54,7 +54,7 @@ mod test {
 
         // Create a tester with the custom backend, the policy to test, and its configuration.
         let mut tester = UnitTestBuilder::default()
-            .with_config(json!({"stringProperty": "custom"}).to_string())
+            .with_config(json!({"mode": "block"}).to_string())
             .with_backend(Rc::clone(&backend))
             .with_entrypoint(super::configure);
 
@@ -64,6 +64,20 @@ mod test {
 
         // We obtain the request that reached the backend and verify the header was added.
         let request = backend.next().unwrap();
-        assert_eq!(request.header("x-added"), Some("custom"));
+        assert_eq!(request.header("x-added"), Some("block"));
+    }
+}
+
+#[cfg(test)]
+mod config_tests {
+    use crate::generated::config::Config;
+
+    #[test]
+    fn parses_partial_config_with_camelcase_aliases() {
+        let json = r#"{"mode":"block","headerSignatureThreshold":3}"#;
+        let cfg: Config = serde_json::from_slice(json.as_bytes()).unwrap();
+        assert_eq!(cfg.mode.as_deref(), Some("block"));
+        assert_eq!(cfg.header_signature_threshold, Some(3));
+        assert!(cfg.user_agent_denylist.is_none());
     }
 }
