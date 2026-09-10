@@ -1,4 +1,5 @@
 // Copyright 2026 Salesforce, Inc. All rights reserved.
+mod classifier;
 mod generated;
 
 use anyhow::{anyhow, Result};
