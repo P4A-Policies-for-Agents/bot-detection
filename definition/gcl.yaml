@@ -1,0 +1,61 @@
+---
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Extension
+metadata:
+  labels:
+    title: bot-detection
+    category: Security
+    description: >-
+      Detects and audits or blocks scripted (non-human) HTTP clients using
+      Layer-7 header heuristics.
+    metadata/capabilities/injectionPoint: inbound
+    metadata/interfaceScope: api,resource
+spec:
+  extends:
+    - name: extension-definition
+      namespace: default
+  properties:
+    mode:
+      type: string
+      enum:
+        - audit
+        - block
+      default: audit
+      description: "Enforcement behavior on a bot verdict. 'audit' observes and emits evidence but lets the request through (injecting an x-p4a-bot-detection marker header); 'block' returns the configured status and body."
+    userAgentAllowlist:
+      type: array
+      items:
+        type: string
+      default: []
+      description: "Case-insensitive substrings; if the User-Agent matches any entry the request is classified human and passes with no evidence, short-circuiting all other checks."
+    userAgentDenylist:
+      type: array
+      items:
+        type: string
+      default: ["curl", "wget", "python-requests", "Go-http-client", "PostmanRuntime", "java", "libwww-perl", "okhttp", "aiohttp", "node-fetch"]
+      description: "Case-insensitive substrings; a User-Agent matching any entry is flagged as a scripted client."
+    requiredBrowserHeaders:
+      type: array
+      items:
+        type: string
+      default: ["Accept", "Accept-Language", "Sec-Fetch-Mode", "sec-ch-ua"]
+      description: "Headers a real browser normally sends. The count of these that are absent feeds the header-signature check."
+    headerSignatureThreshold:
+      type: integer
+      default: 2
+      minimum: 0
+      description: "Number of missing required browser headers at or above which the request is flagged as a bot. A value of 0 disables the header-signature check."
+    failOpen:
+      type: boolean
+      default: true
+      description: "On an internal enforcement error: true continues the request; false rejects it with 500."
+    blockStatusCode:
+      type: integer
+      default: 403
+      minimum: 100
+      maximum: 599
+      description: "HTTP status returned in block mode when a request is classified as a bot."
+    blockBody:
+      type: string
+      default: "Request blocked: automated client detected."
+      description: "Response body returned in block mode."
