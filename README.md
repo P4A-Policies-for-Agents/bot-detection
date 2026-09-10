@@ -1,3 +1,24 @@
+# bot-detection
+
+`bot-detection` is an inbound Flex Gateway policy that classifies incoming
+HTTP requests as scripted (non-human) or human-like using Layer-7 header
+heuristics — `User-Agent` allowlist/denylist matching plus a browser
+header-signature check — and either audits (tags and lets through) or blocks
+the request, depending on the configured `mode`. It complements, and does
+not replace, IP filtering and rate-limiting policies.
+
+- **Usage, configuration reference, and rollout guidance:**
+  [`docs/how-to.md`](docs/how-to.md)
+- **Design rationale and non-goals:**
+  [`docs/superpowers/specs/2026-09-10-bot-detection-mvp-design.md`](docs/superpowers/specs/2026-09-10-bot-detection-mvp-design.md)
+
+This is a unified-layout PDK policy project (single repo root with
+`Cargo.toml`, `Makefile`, `src/lib.rs`, and `definition/gcl.yaml`), built
+against `pdk >= 1.8` (currently pinned inline at `1.10.0`), and cataloged
+under `category: Security`.
+
+---
+
 # "bot-detection" Policy
 
 This policy was created with the Flex Gateway Policy Development Kit (PDK). To find the complete PDK documentation, see [PDK Overview](https://docs.mulesoft.com/pdk/latest/policies-pdk-overview) on the Mulesoft documentation site.
