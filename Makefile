@@ -62,7 +62,7 @@ TEST ?=
 
 .PHONY: test
 test: build tests/config/registration.yaml ## Run integration tests
-	@cargo test $(TEST) -- --nocapture
+	@cargo test $(TEST) -- --test-threads=1 --nocapture
 
 FORMAT     ?=
 OUTPUT_PATH ?=
