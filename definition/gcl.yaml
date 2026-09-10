@@ -1,0 +1,22 @@
+---
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: Extension
+metadata:
+  labels:
+    title: bot-detection
+    category: Security
+    description: >-
+      Detects and audits or blocks scripted (non-human) HTTP clients using
+      Layer-7 header heuristics.
+    metadata/capabilities/injectionPoint: inbound
+    metadata/interfaceScope: api,resource
+spec:
+  extends:
+    - name: extension-definition
+      namespace: default
+  properties:
+    stringProperty:
+      type: string
+      default: some value
+  required:
+    - stringProperty
