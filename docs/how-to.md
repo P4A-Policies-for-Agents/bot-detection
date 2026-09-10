@@ -34,7 +34,7 @@ All properties are defined in [`definition/gcl.yaml`](../definition/gcl.yaml).
 | `userAgentAllowlist` | array of string | `[]` | Case-insensitive substrings. A match short-circuits classification to Human — the request passes through with no evidence emitted, regardless of other signals. |
 | `userAgentDenylist` | array of string | `["curl", "wget", "python-requests", "Go-http-client", "PostmanRuntime", "java", "libwww-perl", "okhttp", "aiohttp", "node-fetch"]` | Case-insensitive substrings. A `User-Agent` matching any entry is flagged as a scripted client. |
 | `requiredBrowserHeaders` | array of string | `["Accept", "Accept-Language", "Sec-Fetch-Mode", "sec-ch-ua"]` | Headers a real browser normally sends. The count of these absent from the request feeds the header-signature check. |
-| `headerSignatureThreshold` | integer (min `0`) | `2` | Number of missing required browser headers at or above which the request is flagged as a bot. |
+| `headerSignatureThreshold` | integer (min `0`) | `2` | Number of missing required browser headers at or above which the request is flagged as a bot. A value of `0` disables the header-signature check. |
 | `failOpen` | boolean | `true` | On an internal enforcement error: `true` continues the request; `false` rejects it with `500`. |
 | `blockStatusCode` | integer (min `100`, max `599`) | `403` | HTTP status returned in `block` mode when a request is classified as a bot. |
 | `blockBody` | string | `"Request blocked: automated client detected."` | Response body returned in `block` mode. |

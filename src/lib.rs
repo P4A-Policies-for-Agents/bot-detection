@@ -75,8 +75,13 @@ async fn configure(
     Configuration(bytes): Configuration,
     violations: PolicyViolations,
 ) -> Result<()> {
-    let config: Config = serde_json::from_slice(&bytes)
-        .map_err(|e| anyhow!("Failed to parse configuration: {e}"))?;
+    let config: Config = serde_json::from_slice(&bytes).map_err(|e| {
+        logger::error!(
+            "Failed to parse configuration: {e}; raw config: {}",
+            String::from_utf8_lossy(&bytes)
+        );
+        anyhow!("Failed to parse configuration: {e}")
+    })?;
     let resolved = ResolvedConfig::from(&config);
     let filter = on_request(|rs| request_filter(rs, &resolved, &violations));
     launcher.launch(filter).await?;
@@ -90,6 +95,10 @@ async fn request_filter(
 ) -> Flow<()> {
     let headers_state = request_state.into_headers_state().await;
     let handler = headers_state.handler();
+
+    // The marker header is authoritative evidence emitted by this policy; strip
+    // any inbound copy so a client cannot forge it before we set it ourselves.
+    handler.remove_header(MARKER_HEADER);
 
     let user_agent = handler.header("user-agent");
     let present: HashSet<String> = cfg
@@ -138,7 +147,7 @@ async fn request_filter(
                 }
                 Mode::Audit => {
                     logger::warn!("Bot flagged (audit): {}", reason_str);
-                    handler.add_header(MARKER_HEADER, "flagged");
+                    handler.set_header(MARKER_HEADER, "flagged");
                     Flow::Continue(())
                 }
             }
@@ -199,6 +208,41 @@ mod filter_tests {
         assert_eq!(resp.status_code(), 200);
         let upstream = backend.next().unwrap();
         assert!(upstream.header("x-p4a-bot-detection").is_none());
+    }
+
+    #[test]
+    fn human_request_with_forged_marker_has_marker_stripped() {
+        let backend = Rc::new(TraceBackend::new(UnitHttpResponse::new(200)));
+        let mut tester = UnitTestBuilder::default()
+            .with_config(r#"{"mode":"audit"}"#)
+            .with_backend(Rc::clone(&backend))
+            .with_entrypoint(crate::configure);
+
+        let resp = tester.request(
+            browser_request().with_header("x-p4a-bot-detection", "flagged"),
+        );
+        assert_eq!(resp.status_code(), 200);
+        let upstream = backend.next().unwrap();
+        assert!(upstream.header("x-p4a-bot-detection").is_none());
+    }
+
+    #[test]
+    fn audit_mode_with_spoofed_inbound_marker_yields_single_authoritative_value() {
+        let backend = Rc::new(TraceBackend::new(UnitHttpResponse::new(200)));
+        let mut tester = UnitTestBuilder::default()
+            .with_config(r#"{"mode":"audit"}"#)
+            .with_backend(Rc::clone(&backend))
+            .with_entrypoint(crate::configure);
+
+        let resp = tester.request(
+            UnitHttpRequest::get()
+                .with_path("/x")
+                .with_header("user-agent", SCRIPTED_UA)
+                .with_header("x-p4a-bot-detection", "spoof"),
+        );
+        assert_eq!(resp.status_code(), 200);
+        let upstream = backend.next().unwrap();
+        assert_eq!(upstream.header("x-p4a-bot-detection").as_deref(), Some("flagged"));
     }
 
     #[test]

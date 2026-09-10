@@ -44,7 +44,7 @@ spec:
       type: integer
       default: 2
       minimum: 0
-      description: "Number of missing required browser headers at or above which the request is flagged as a bot."
+      description: "Number of missing required browser headers at or above which the request is flagged as a bot. A value of 0 disables the header-signature check."
     failOpen:
       type: boolean
       default: true
